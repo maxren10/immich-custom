@@ -1,0 +1,8 @@
+# Optional read-only host library; use together with compose.yaml.
+services:
+  immich-server:
+    volumes:
+      - type: bind
+        source: ${EXTERNAL_LIBRARY_PATH:?Set EXTERNAL_LIBRARY_PATH to your photo folder}
+        target: /mnt/photos
+        read_only: true

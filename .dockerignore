@@ -2,6 +2,8 @@
 .github/
 .git/
 .env*
+.secrets/
+services/
 *.log
 *.tmp
 *.temp

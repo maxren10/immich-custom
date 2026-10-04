@@ -22,7 +22,7 @@ services:
     container_name: immich_pair_runner
     image: ${IMMICH_PAIR_RUNNER_IMAGE:-immich-pair-task-runner:local}
     build:
-      context: ../immich-pair
+      context: ../immich-custom/services/immich-pair
       dockerfile: Dockerfile.runner
     network_mode: service:immich-server
     environment:

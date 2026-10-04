@@ -1,0 +1,8 @@
+{
+  "mode": "LOCAL_SAMPLE_DRY_RUN",
+  "ownerId": "00000000-0000-4000-8000-000000000001",
+  "sampleRoot": "I:\\photos\\PHOTOMANAGER_TEST\\synthetic",
+  "reportDir": "I:\\temp\\immich-pair-output",
+  "exiftoolPath": "I:\\software\\XnViewMP\\AddOn\\exiftool.exe",
+  "includeSha256": true
+}

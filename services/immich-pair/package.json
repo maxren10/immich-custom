@@ -1,0 +1,24 @@
+{
+  "name": "immich-custom-pair-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bundled JPG/RAW pair-stack task runner for Immich Custom",
+  "license": "AGPL-3.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test \"dist/tests/*.test.js\"",
+    "test:critical": "npm run build && node --test dist/tests/critical-readonly-boundary.test.js dist/tests/inventory-completeness.test.js dist/tests/local-dry-run-critical.test.js dist/tests/phase-b-wire-critical.test.js dist/tests/phase-b-stack-protocol-critical.test.js dist/tests/phase-b-boundary-critical.test.js dist/tests/phase-b-write-critical.test.js dist/tests/all-libraries-job-critical.test.js",
+    "cli": "npm run build && node dist/src/cli.js",
+    "phase-b-live-detail": "npm run build && node dist/src/cli.js phase-b live-detail",
+    "task-runner": "npm run build && node dist/src/task-runner-main.js",
+    "test:container": "npm run build && node --test dist/tests/all-libraries-job-critical.test.js dist/tests/task-runner-main-critical.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "typescript": "5.7.2"
+  }
+}

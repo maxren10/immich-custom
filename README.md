@@ -1,17 +1,38 @@
 # Immich Custom
 
-基于 [Immich](https://github.com/immich-app/immich) 开发的定制照片管理系统，由 [maxren10](https://github.com/maxren10) 维护。当前定制版基于 Immich v3.1.0，保留上游版权声明及 AGPL-3.0 许可证。
+基于 [Immich](https://github.com/immich-app/immich) v3.1.0 开发的定制照片管理系统，由 [maxren10](https://github.com/maxren10) 维护，沿用 AGPL-3.0 许可证。
+
+**本仓库包含完整部署源码：Immich Server/Web、内置 JPG/RAW 配对执行器、数据库/缓存/机器学习服务的 Compose 配置。只需克隆本仓库，不需要另行获取 immich-pair 或任何私有项目。**
+
+## 单仓库部署
+
+需要 Docker Compose；初始化可使用本地 Node.js 24，也可通过 Docker 运行。
+
+```sh
+git clone https://github.com/maxren10/immich-custom.git
+cd immich-custom
+docker run --rm -v "${PWD}:/workspace" -w /workspace node:24-bookworm-slim node scripts/setup.mjs
+docker compose up -d --build
+```
+
+打开 http://localhost:2283 创建管理员，然后创建 API key，保存为一行文本到 `.secrets/api-key`。启用内置配对执行器：
+
+```sh
+docker compose --profile pairing up -d --build
+```
+
+完整初始化、目录权限、凭据保存、更新和备份说明见 [单仓库部署指南](docs/standalone-deployment.md)。默认使用独立 named volumes，不绑定开发者机器的照片或数据库路径。
 
 ## 定制功能
 
-- JPG/RAW 配对堆叠：在管理任务页面启动或恢复配对任务，查看进度及需要人工处理的状态。配套任务执行器见 [immich-pair](https://github.com/maxren10/immich-pair)。
-- 收藏 RAW 同步：将收藏照片对应的 RAW 原文件同步到用户选择的本地 `photo_mod` 文件夹；收藏 JPG 时也可查找堆叠中的 RAW。
-- 记住目标目录：按用户保存浏览器目录句柄，支持重新选择，并在权限失效后提示再次授权或选择。目录写入功能需要支持 File System Access API 的桌面 Chrome 或 Edge。
-- 副本保护：使用 SHA-256 校验原始字节，不覆盖内容不同的已有文件；取消收藏后的下次同步仅清理清单中内容未被修改的受管副本，保留无关文件及用户修改的文件。
+- **JPG/RAW 配对堆叠**：管理任务页面启动或恢复配对，展示进度和人工处理状态；执行器源码位于 [services/immich-pair](services/immich-pair)，支持 JPG/JPEG/ARW/DNG。
+- **收藏 RAW 同步**：同步 RAW 原文件；收藏 JPG 时可从堆叠中查找 RAW。
+- **记住目标目录**：按用户记忆浏览器目录句柄，支持重新选择和权限失效提示，需要支持 File System Access API 的桌面 Chrome/Edge。
+- **副本保护**：SHA-256 校验原始字节，不覆盖内容不同的已有文件；取消收藏后的下次同步只清理未被修改的受管副本，保留无关文件和用户修改的文件。
 
 ## 来源与许可证
 
-上游项目：[immich-app/immich](https://github.com/immich-app/immich)。本仓库是独立维护的定制版本。源代码沿用 [GNU AGPL v3](LICENSE)，保留原有版权、贡献者及许可证声明。下方保留上游项目说明。
+上游项目：[immich-app/immich](https://github.com/immich-app/immich)。本仓库独立维护，保留上游版权、贡献者及 [GNU AGPL v3](LICENSE) 许可证声明。内置配对执行器也是本定制版的组成部分。下方保留上游项目说明。
 
 ---
 

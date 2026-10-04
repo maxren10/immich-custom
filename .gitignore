@@ -1,5 +1,12 @@
 **/node_modules/**
 
+# Standalone deployment secrets and generated configuration
+.env
+.secrets/
+services/immich-pair/dist/
+services/immich-pair/data/
+services/immich-pair/reports/
+
 .DS_Store
 .vscode/*
 !.vscode/launch.json

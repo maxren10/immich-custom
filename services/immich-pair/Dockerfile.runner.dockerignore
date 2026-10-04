@@ -1,0 +1,10 @@
+.git
+node_modules
+dist
+data
+reports
+*.config.json
+*.config.local.json
+*.log
+Dockerfile.runner
+Dockerfile.runner.dockerignore

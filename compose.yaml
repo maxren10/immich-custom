@@ -1,0 +1,117 @@
+name: ${COMPOSE_PROJECT_NAME:-immich-custom}
+
+services:
+  immich-server:
+    image: ${CUSTOM_SERVER_IMAGE:-immich-custom-server:3.1.0}
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+      args:
+        BUILD_ID: standalone
+        BUILD_IMAGE: ${CUSTOM_SERVER_IMAGE:-immich-custom-server:3.1.0}
+        BUILD_SOURCE_REF: main
+        BUILD_SOURCE_COMMIT: ${CUSTOM_SOURCE_COMMIT:-local}
+    environment:
+      DB_HOSTNAME: database
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD:?Run scripts/setup.mjs first}
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: redis
+      IMMICH_MACHINE_LEARNING_URL: http://immich-machine-learning:3003
+      IMMICH_PAIR_RUNNER_URL: http://127.0.0.1:2284
+      IMMICH_PAIR_CONTROL_TOKEN_FILE: /run/secrets/immich_pair_control_token
+      TZ: ${TZ:-Etc/UTC}
+    ports:
+      - '${IMMICH_BIND_ADDRESS:-127.0.0.1}:${IMMICH_PORT:-2283}:2283'
+    volumes:
+      - uploads:/data
+    secrets:
+      - immich_pair_control_token
+    depends_on:
+      redis:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+  immich-pair-runner:
+    profiles: [pairing]
+    image: ${CUSTOM_RUNNER_IMAGE:-immich-custom-pair-runner:3.1.0}
+    build:
+      context: ./services/immich-pair
+      dockerfile: Dockerfile.runner
+    network_mode: service:immich-server
+    environment:
+      IMMICH_PAIR_API_KEY_FILE: /run/secrets/immich_pair_api_key
+      IMMICH_PAIR_CONTROL_TOKEN_FILE: /run/secrets/immich_pair_control_token
+      IMMICH_PAIR_TASK_STATE_PATH: /data/task-state.json
+      IMMICH_PAIR_REGISTRY_PATH: /data/pairs.sqlite
+      IMMICH_PAIR_RUNNER_PORT: '2284'
+    secrets:
+      - immich_pair_api_key
+      - immich_pair_control_token
+    volumes:
+      - pair-state:/data
+    depends_on:
+      immich-server:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "const fs=require('fs');fetch('http://127.0.0.1:2284/v1/health',{headers:{'x-immich-pair-control':fs.readFileSync(process.env.IMMICH_PAIR_CONTROL_TOKEN_FILE,'utf8').trim()}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v3.1.0
+    volumes:
+      - model-cache:/cache
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+  redis:
+    image: docker.io/valkey/valkey:9@sha256:8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Run scripts/setup.mjs first}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - database:/var/lib/postgresql/data
+    shm_size: 128mb
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+volumes:
+  uploads:
+  database:
+  model-cache:
+  pair-state:
+
+secrets:
+  immich_pair_api_key:
+    file: ${PAIR_API_KEY_FILE:-./.secrets/api-key}
+  immich_pair_control_token:
+    file: ${PAIR_CONTROL_TOKEN_FILE:-./.secrets/control-token}

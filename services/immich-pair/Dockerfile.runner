@@ -1,0 +1,28 @@
+FROM node:24-bookworm-slim AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev --ignore-scripts
+
+COPY tsconfig.json ./
+COPY src ./src
+COPY tests ./tests
+RUN npm run build
+
+FROM node:24-bookworm-slim
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    IMMICH_PAIR_TASK_STATE_PATH=/data/task-state.json \
+    IMMICH_PAIR_REGISTRY_PATH=/data/pairs.sqlite
+
+RUN mkdir -p /data && chown node:node /data
+COPY --from=build --chown=node:node /app/dist/src ./dist/src
+COPY --from=build --chown=node:node /app/package.json ./package.json
+
+USER node
+
+EXPOSE 2284
+ENTRYPOINT ["node", "dist/src/task-runner-main.js"]
