@@ -1,0 +1,46 @@
+services:
+  immich-server:
+    image: ${IMMICH_PAIR_IMMICH_IMAGE:-immich-server-custom:v3.1.0-pair-stack}
+    build:
+      context: ../immich-custom
+      dockerfile: server/Dockerfile
+      args:
+        BUILD_ID: local-pair-stack
+        BUILD_IMAGE: ${IMMICH_PAIR_IMMICH_IMAGE:-immich-server-custom:v3.1.0-pair-stack}
+        BUILD_SOURCE_REF: v3.1.0-local-pair-stack
+        BUILD_SOURCE_COMMIT: 8aa95c67470a02a8ddedf03c2e52963af33065ff
+    environment:
+      IMMICH_PAIR_RUNNER_URL: http://127.0.0.1:2284
+      IMMICH_PAIR_CONTROL_TOKEN_FILE: /run/secrets/immich_pair_control_token
+    volumes:
+      - type: bind
+        source: ${IMMICH_PAIR_CONTROL_TOKEN_FILE_HOST:?set IMMICH_PAIR_CONTROL_TOKEN_FILE_HOST}
+        target: /run/secrets/immich_pair_control_token
+        read_only: true
+
+  immich-pair-runner:
+    container_name: immich_pair_runner
+    image: ${IMMICH_PAIR_RUNNER_IMAGE:-immich-pair-task-runner:local}
+    build:
+      context: ../immich-pair
+      dockerfile: Dockerfile.runner
+    network_mode: service:immich-server
+    environment:
+      IMMICH_PAIR_API_KEY_FILE: /run/secrets/immich_pair_api_key
+      IMMICH_PAIR_CONTROL_TOKEN_FILE: /run/secrets/immich_pair_control_token
+      IMMICH_PAIR_TASK_STATE_PATH: /data/task-state.json
+      IMMICH_PAIR_REGISTRY_PATH: /data/pairs.sqlite
+      IMMICH_PAIR_RUNNER_PORT: '2284'
+    volumes:
+      - type: bind
+        source: ${IMMICH_PAIR_API_KEY_FILE_HOST:?set IMMICH_PAIR_API_KEY_FILE_HOST}
+        target: /run/secrets/immich_pair_api_key
+        read_only: true
+      - type: bind
+        source: ${IMMICH_PAIR_CONTROL_TOKEN_FILE_HOST:?set IMMICH_PAIR_CONTROL_TOKEN_FILE_HOST}
+        target: /run/secrets/immich_pair_control_token
+        read_only: true
+      - type: bind
+        source: ${IMMICH_PAIR_DATA_LOCATION:?set IMMICH_PAIR_DATA_LOCATION}
+        target: /data
+    restart: always
